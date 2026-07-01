@@ -7,7 +7,7 @@ porcentagem da área do prato ocupada por comida. O modelo roda 100% localmente.
 > **Aluno:** Gabriel Videla Figueiredo · **Professor:** Gabriel Matos Araujo
 
 ![Exemplo do pipeline](docs/exemplo_pipeline.jpg)
-*Saída do pipeline: máscara de comida (verde), borda do prato via transformada de Hough (azul) e porcentagem calculada (imagem de validação do pipeline, com modelo parcialmente treinado e limiar de confiança reduzido).*
+*Saída do modelo final em imagem de validação: máscara de comida (verde), borda do prato via transformada de Hough (azul) e porcentagem calculada.*
 
 ## 📐 Como funciona
 
@@ -57,7 +57,7 @@ uv sync   # cria o ambiente: Python 3.12 + PyTorch CUDA 12.6 + Ultralytics
 # 1. Baixa o FoodSeg103 e converte para o formato YOLO-seg (~7k imagens)
 uv run python scripts/download_dataset.py
 
-# 2. Fine-tuna o YOLOv8n-seg (~2h numa RTX 2060 Super, 50 épocas)
+# 2. Fine-tuna o YOLOv8n-seg (~1,6 h numa RTX 2060 Super, 50 épocas)
 uv run python scripts/train.py
 
 # 3. Roda em uma foto ou pasta de fotos; salva visualizações em outputs/
@@ -88,9 +88,19 @@ uv run python scripts/predict.py data/foodseg103/images/val --conf 0.01
 | Resolução | 640 × 640 |
 | Épocas / batch | 50 / 8 |
 | Hardware | RTX 2060 Super (8 GB), CUDA 12.6 |
+| Tempo de treino | 1,6 h |
 
-As métricas (mAP de caixa e de máscara), curvas de perda e checkpoints ficam em
-`runs/food-seg/` após o treino.
+### Resultados (validação: 2.135 imagens, 3.228 instâncias)
+
+| Métrica | Caixas | Máscaras |
+|---|---|---|
+| Precisão | 0,925 | 0,929 |
+| Revocação | 0,869 | 0,872 |
+| mAP@50 | 0,936 | **0,937** |
+| mAP@50–95 | 0,850 | 0,806 |
+
+Inferência: ~2 ms por imagem na GPU. As curvas de perda/mAP, matriz de confusão e exemplos
+de predição ficam em `runs/food-seg/` após o treino.
 
 ## 📁 Estrutura
 

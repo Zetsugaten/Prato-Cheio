@@ -313,20 +313,22 @@ registrar a demonstração.
 % ---------------------------------------------------------------- 4
 \section{Resultados e Discussão}
 
-\subsection{Validação do pipeline}
+\subsection{Saída do sistema}
 
-A Figura~\ref{fig:pipeline} mostra a saída do sistema durante a validação de ponta a ponta.
-A máscara produzida pela rede é sobreposta em verde, o círculo encontrado pela transformada de
-Hough em azul e o percentual calculado pela Equação~\eqref{eq:quantidade} é exibido no topo.
+A Figura~\ref{fig:pipeline} mostra a saída do sistema com o modelo final em uma imagem do
+conjunto de validação. A máscara produzida pela rede é sobreposta em verde, o círculo
+encontrado pela transformada de Hough em azul e o percentual calculado pela
+Equação~\eqref{eq:quantidade} é exibido no topo. A máscara cobre com precisão a rabanada e as
+frutas, e o círculo de Hough acompanha a borda do prato; nota-se um pequeno falso positivo na
+caneca ao fundo (parcialmente fora do círculo, com impacto reduzido na medida), exemplo do
+tipo de erro residual discutido na Seção~\ref{sec:limitacoes}.
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=\textwidth]{figuras/exemplo_pipeline.jpg}
-  \caption{Saída do pipeline em imagem de validação: original (esquerda) e resultado
-  (direita), com máscara de comida, círculo de Hough e percentual calculado. Nesta execução de
-  validação o modelo havia sido treinado por apenas 2 épocas em 40 imagens, com limiar de
-  confiança reduzido; a imagem, em close, não contém a borda completa do prato, e o círculo
-  encontrado não corresponde a ela --- caso discutido na Seção~\ref{sec:limitacoes}.}
+  \caption{Saída do pipeline com o modelo final em imagem de validação: original (esquerda) e
+  resultado (direita), com máscara de comida, círculo de Hough e percentual calculado
+  ($Q = 44{,}3\%$).}
   \label{fig:pipeline}
 \end{figure}
 
@@ -373,24 +375,34 @@ predições do modelo final sobre um lote de validação.
 O treinamento completo (50 épocas sobre as 4.983 imagens de treino) produz as métricas padrão
 de segmentação reportadas pelo framework Ultralytics sobre o conjunto de validação (2.135
 imagens): precisão, revocação e mAP (\emph{mean Average Precision}) para caixas e máscaras.
-Os valores finais, extraídos de \texttt{runs/food-seg/results.csv}, estão resumidos na
-Tabela~\ref{tab:metricas}.
+O treinamento das 50 épocas levou 1,6~hora na GPU utilizada. Os valores finais, obtidos com o
+melhor checkpoint sobre as 2.135 imagens de validação (3.228 instâncias de comida), estão
+resumidos na Tabela~\ref{tab:metricas}.
 
 \begin{table}[H]
   \centering
-  \caption{Métricas de validação após o treinamento completo (máscaras).}
+  \caption{Métricas de validação do modelo final (classe única \texttt{food}).}
   \label{tab:metricas}
-  \begin{tabular}{lc}
+  \begin{tabular}{lcc}
     \toprule
-    Métrica (máscara, classe \texttt{food}) & Valor \\
+    Métrica & Caixas & Máscaras \\
     \midrule
-    Precisão ($P$)          & --- \\
-    Revocação ($R$)         & --- \\
-    mAP@50                  & --- \\
-    mAP@50--95              & --- \\
+    Precisão ($P$)          & 0{,}925 & 0{,}929 \\
+    Revocação ($R$)         & 0{,}869 & 0{,}872 \\
+    mAP@50                  & 0{,}936 & 0{,}937 \\
+    mAP@50--95              & 0{,}850 & 0{,}806 \\
     \bottomrule
   \end{tabular}
 \end{table}
+
+Os valores indicam um segmentador confiável para a tarefa: precisão de máscara acima de 0,9
+significa poucas regiões marcadas como comida indevidamente, e o mAP@50 de 0,937 mostra que as
+máscaras previstas coincidem bem com as anotações. O mAP@50--95 de máscara (0,806), mais
+exigente quanto ao alinhamento fino dos contornos, é naturalmente inferior --- fronteiras
+exatas de alimentos amorfos são ambíguas até para anotadores humanos. Para a aplicação, que
+integra a área total da máscara (Equação~\eqref{eq:quantidade}), pequenos desvios de contorno
+têm impacto reduzido na medida final. A inferência leva cerca de 2~ms por imagem na GPU
+utilizada, viabilizando a operação em tempo real descrita na Seção anterior.
 
 \subsection{Limitações}
 \label{sec:limitacoes}
