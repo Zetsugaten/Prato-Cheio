@@ -51,6 +51,11 @@ cd food-plate-vision
 uv sync   # cria o ambiente: Python 3.12 + PyTorch CUDA 12.6 + Ultralytics
 ```
 
+> **Nota (Windows):** se o PowerShell não reconhecer o comando `uv`
+> (*"'uv' não é reconhecido..."*), é porque ele foi instalado como módulo do Python.
+> Nesse caso, prefixe todos os comandos com `py -m`, por exemplo:
+> `py -m uv sync` e `py -m uv run python scripts/predict.py --webcam`.
+
 ## 🚀 Uso
 
 ```powershell
