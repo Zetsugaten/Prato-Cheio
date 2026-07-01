@@ -161,9 +161,24 @@ A variante do gradiente (método \textsc{Hough Gradient} do OpenCV \cite{opencv}
 computacional usando a \emph{direção} do gradiente em cada pixel de borda para restringir os
 centros candidatos, acumulando votos em 2D e determinando o raio em uma etapa posterior.
 
-No sistema, restringe-se a busca a raios entre $1/5$ e $0{,}7$ da menor dimensão da imagem
---- a faixa plausível para um prato fotografado de cima --- e seleciona-se, entre os círculos
-com votação suficiente, o de maior raio, que tende a corresponder à borda externa do prato.
+No sistema, restringe-se a busca a raios entre $1/3$ e $0{,}75$ da menor dimensão da imagem
+--- a faixa plausível para um prato fotografado de propósito, que ocupa boa parte do quadro.
+Como a implementação retorna os círculos em ordem decrescente de votos, percorre-se essa lista
+e aceita-se o primeiro círculo \emph{plausível}: aquele cujo centro está na região central da
+imagem e que está quase inteiramente contido no quadro. Esses filtros de plausibilidade
+eliminam falsos positivos gerados por bordas internas de alto contraste (frisos decorativos do
+prato, contornos de alimentos), que podem acumular muitos votos sem corresponder à borda da
+louça. A Figura~\ref{fig:hough} ilustra a cadeia completa em uma imagem do conjunto de dados.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{figuras/etapas_hough.png}
+  \caption{Etapas da detecção do prato: (a) imagem original; (b) conversão para níveis de
+  cinza e filtro de mediana $7\times7$; (c) mapa de bordas de Canny, no qual a borda circular
+  da louça é evidente; (d) círculo mais votado que satisfaz os critérios de plausibilidade,
+  com o centro marcado em vermelho.}
+  \label{fig:hough}
+\end{figure}
 
 \subsection{Redes neurais convolucionais e segmentação de instâncias}
 
@@ -213,6 +228,16 @@ de treino e 2.135 de validação). A preparação dos dados
         altura da imagem, gerando os arquivos de rótulo no formato YOLO-seg.
 \end{enumerate}
 
+A Figura~\ref{fig:amostras} mostra amostras do conjunto após a binarização.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{figuras/amostras_dataset.png}
+  \caption{Amostras do FoodSeg103 após o colapso das 103 classes em uma máscara binária única
+  (comida em branco). Note a variedade de louças, enquadramentos e iluminação.}
+  \label{fig:amostras}
+\end{figure}
+
 \subsection{Treinamento}
 
 O \emph{fine-tuning} parte dos pesos \texttt{yolov8n-seg.pt} pré-treinados no COCO. Os
@@ -236,6 +261,13 @@ hiperparâmetros principais estão na Tabela~\ref{tab:hiper}.
     \bottomrule
   \end{tabular}
 \end{table}
+
+Durante o treinamento, o framework aplica aumento de dados (\emph{data augmentation})
+automático: composição em mosaico de quatro imagens, perturbações de matiz, saturação e
+brilho no espaço HSV, espelhamento horizontal e transformações afins de escala e translação.
+Essas perturbações aumentam artificialmente a variabilidade do conjunto de treino e melhoram
+a generalização --- em particular a robustez a variações de iluminação, relevante para o
+cenário de uso com câmeras comuns.
 
 Antes do treinamento completo, o pipeline foi validado com um ``teste de fumaça'': conversão
 de um subconjunto de 40 imagens e treinamento por 2 épocas, confirmando o funcionamento de
@@ -267,6 +299,17 @@ Para cada fotografia analisada (\texttt{scripts/predict.py}):
 A saída visual apresenta, lado a lado, a imagem original e a imagem com a máscara de comida em
 verde translúcido, a borda do prato em azul e o valor de $Q$ em um banner superior.
 
+\subsection{Demonstração em tempo real}
+
+Além do processamento de fotografias, o sistema oferece um modo de demonstração ao vivo
+(\texttt{predict.py --webcam}): os quadros da webcam são processados continuamente pelo mesmo
+pipeline e exibidos com as anotações sobrepostas, permitindo observar a porcentagem variar em
+tempo real conforme comida é adicionada ou retirada do prato. Como a inferência do YOLOv8n-seg
+leva cerca de 3~ms por quadro na GPU utilizada e a transformada de Hough opera em poucos
+milissegundos, o pipeline completo sustenta a taxa de quadros da câmera com folga. Uma opção
+de gravação (\texttt{--gravar}) salva o vídeo anotado diretamente em MP4, o que foi usado para
+registrar a demonstração.
+
 % ---------------------------------------------------------------- 4
 \section{Resultados e Discussão}
 
@@ -287,13 +330,51 @@ Hough em azul e o percentual calculado pela Equação~\eqref{eq:quantidade} é e
   \label{fig:pipeline}
 \end{figure}
 
+\subsection{Curvas de treinamento}
+
+A Figura~\ref{fig:curvas} apresenta a evolução do treinamento ao longo das 50 épocas: as
+perdas de caixa, de segmentação e de classificação sobre os conjuntos de treino e validação,
+e a evolução das métricas de qualidade (precisão, revocação, mAP@50 e mAP@50--95 para caixas
+e máscaras). O decaimento monotônico das perdas de validação acompanhando as de treino indica
+ajuste sem sobreajuste apreciável, e a estabilização das curvas de mAP nas épocas finais
+sugere que o orçamento de 50 épocas foi adequado.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{figuras/curvas_treinamento.png}
+  \caption{Evolução das perdas e métricas ao longo do treinamento (gerado pelo framework
+  Ultralytics).}
+  \label{fig:curvas}
+\end{figure}
+
+A Figura~\ref{fig:pr} mostra a curva precisão--revocação das máscaras sobre o conjunto de
+validação, que caracteriza o compromisso entre falsos positivos e falsos negativos do
+segmentador em todos os limiares de confiança, e a Figura~\ref{fig:valpred} exemplifica as
+predições do modelo final sobre um lote de validação.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.75\textwidth]{figuras/pr_mascaras.png}
+  \caption{Curva precisão--revocação das máscaras (classe \texttt{food}) no conjunto de
+  validação.}
+  \label{fig:pr}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{figuras/val_predicoes.jpg}
+  \caption{Predições do modelo final sobre um lote do conjunto de validação: máscaras de
+  comida sobrepostas às imagens.}
+  \label{fig:valpred}
+\end{figure}
+
 \subsection{Métricas do treinamento}
 
 O treinamento completo (50 épocas sobre as 4.983 imagens de treino) produz as métricas padrão
 de segmentação reportadas pelo framework Ultralytics sobre o conjunto de validação (2.135
 imagens): precisão, revocação e mAP (\emph{mean Average Precision}) para caixas e máscaras.
-Os valores finais devem ser extraídos de \texttt{runs/food-seg/results.csv} ao término do
-treinamento e estão resumidos na Tabela~\ref{tab:metricas}.
+Os valores finais, extraídos de \texttt{runs/food-seg/results.csv}, estão resumidos na
+Tabela~\ref{tab:metricas}.
 
 \begin{table}[H]
   \centering
@@ -321,7 +402,13 @@ treinamento e estão resumidos na Tabela~\ref{tab:metricas}.
   \item \textbf{Hipótese de prato circular}: a transformada de Hough pressupõe borda circular
         razoavelmente completa no quadro. Muitas imagens do FoodSeg103 são \emph{closes} sem a
         borda do prato, situação em que o sistema recua para a imagem inteira como referência
-        --- o resultado permanece bem definido, mas perde a normalização pelo prato;
+        --- o resultado permanece bem definido, mas perde a normalização pelo prato. Em uma
+        inspeção qualitativa sobre 24 imagens do conjunto de treino, o detector encontrou um
+        círculo plausível em 11; os acertos concentram-se em louças com borda visível e os
+        recuos, em \emph{closes} --- comportamento adequado, já que aceitar um círculo errado
+        distorceria a medida mais do que usar a imagem inteira. No cenário de uso pretendido
+        (prato fotografado de cima, inteiro no quadro), a detecção é substancialmente mais
+        confiável, como ilustra a Figura~\ref{fig:hough};
   \item \textbf{Domínio do dataset}: o FoodSeg103 contém fotografias de refeições variadas;
         cenários muito diferentes (iluminação extrema, pratos coloridos ou estampados) podem
         degradar tanto a segmentação quanto a detecção do prato.
@@ -370,5 +457,64 @@ G.~Jocher, A.~Chaurasia e J.~Qiu, ``Ultralytics YOLOv8'', 2023. Disponível em:
 G.~Bradski, ``The OpenCV library'', \emph{Dr. Dobb's Journal of Software Tools}, 2000.
 
 \end{thebibliography}
+
+\appendix
+
+\section{Trechos principais do código}
+
+O código completo está disponível em
+\url{https://github.com/Zetsugaten/food-plate-vision}. Reproduzem-se aqui os dois trechos
+centrais do pipeline de inferência.
+
+\subsection{Detecção do prato pela transformada de Hough}
+
+\begin{lstlisting}
+def detect_plate(image):
+    """Retorna (cx, cy, raio) do prato, ou None."""
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    gray = cv2.medianBlur(gray, 7)      # filtro nao linear anti-ruido
+    h, w = gray.shape
+    min_dim = min(h, w)
+
+    circles = cv2.HoughCircles(
+        gray, cv2.HOUGH_GRADIENT,
+        dp=1.5, minDist=min_dim // 2,
+        param1=120,   # limiar do Canny interno
+        param2=60,    # limiar de votos no acumulador
+        minRadius=min_dim // 3,
+        maxRadius=int(min_dim * 0.75))
+    if circles is None:
+        return None
+
+    # Circulos vem em ordem decrescente de votos; aceita o
+    # primeiro plausivel (centro na regiao central, circulo
+    # quase todo dentro do quadro).
+    for cx, cy, r in np.round(circles[0]).astype(int):
+        center_ok = (abs(cx - w/2) < w/4 and abs(cy - h/2) < h/4)
+        inside_ok = (cx - 0.7*r >= -0.1*w and cx + 0.7*r <= 1.1*w
+                     and cy - 0.7*r >= -0.1*h and cy + 0.7*r <= 1.1*h)
+        if center_ok and inside_ok:
+            return int(cx), int(cy), int(r)
+    return None
+\end{lstlisting}
+
+\subsection{Quantificação da comida no prato}
+
+\begin{lstlisting}
+# Uniao das mascaras de comida previstas pela rede
+food_mask = food_mask_from_yolo(model, image, conf)
+plate = detect_plate(image)
+
+if plate is not None:
+    cx, cy, r = plate
+    plate_mask = np.zeros((h, w), dtype=np.uint8)
+    cv2.circle(plate_mask, (cx, cy), r, 1, thickness=-1)
+else:
+    plate_mask = np.ones((h, w), dtype=np.uint8)  # sem prato: imagem inteira
+
+plate_area = int(plate_mask.sum())                # area do prato (pixels)
+food_area = int((food_mask & plate_mask).sum())   # comida dentro do prato
+percent = 100.0 * food_area / plate_area          # Equacao (5)
+\end{lstlisting}
 
 \end{document}

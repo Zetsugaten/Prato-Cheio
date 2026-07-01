@@ -47,14 +47,22 @@ def detect_plate(image: np.ndarray) -> tuple[int, int, int] | None:
         minDist=min_dim // 2,
         param1=120,   # limiar do detector de bordas (Canny) interno
         param2=60,    # limiar de votos no acumulador de Hough
-        minRadius=min_dim // 5,
-        maxRadius=int(min_dim * 0.7),
+        minRadius=min_dim // 3,   # um prato fotografado de propósito ocupa boa parte do quadro
+        maxRadius=int(min_dim * 0.75),
     )
     if circles is None:
         return None
-    # O prato tende a ser o maior círculo com muitos votos; pega o de maior raio.
-    cx, cy, r = max(np.round(circles[0]).astype(int), key=lambda c: c[2])
-    return int(cx), int(cy), int(r)
+    # HoughCircles retorna os círculos em ordem decrescente de votos. Percorre nessa
+    # ordem e aceita o primeiro plausível: centro na região central da imagem e
+    # círculo quase inteiro dentro do quadro (um prato fotografado de propósito
+    # dificilmente está encostado na borda da foto).
+    for cx, cy, r in np.round(circles[0]).astype(int):
+        center_ok = abs(cx - w / 2) < w / 4 and abs(cy - h / 2) < h / 4
+        inside_ok = (cx - 0.7 * r >= -0.1 * w and cx + 0.7 * r <= 1.1 * w
+                     and cy - 0.7 * r >= -0.1 * h and cy + 0.7 * r <= 1.1 * h)
+        if center_ok and inside_ok:
+            return int(cx), int(cy), int(r)
+    return None
 
 
 def food_mask_from_yolo(model: YOLO, image: np.ndarray, conf: float) -> np.ndarray:
