@@ -1,0 +1,24 @@
+[project]
+name = "food-plate-vision"
+version = "0.1.0"
+description = "Estimativa da quantidade de comida no prato (% da área do prato) via segmentação YOLO + transformada de Hough"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "ultralytics>=8.3",
+    "torch>=2.6",
+    "torchvision",
+    "opencv-python>=4.10",
+    "numpy",
+    "datasets>=3.2",
+    "pillow",
+    "tqdm",
+]
+
+[tool.uv.sources]
+torch = [{ index = "pytorch-cu126" }]
+torchvision = [{ index = "pytorch-cu126" }]
+
+[[tool.uv.index]]
+name = "pytorch-cu126"
+url = "https://download.pytorch.org/whl/cu126"
+explicit = true
