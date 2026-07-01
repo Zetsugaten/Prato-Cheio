@@ -63,6 +63,12 @@ uv run python scripts/train.py
 # 3. Roda em uma foto ou pasta de fotos; salva visualizações em outputs/
 uv run python scripts/predict.py minha_foto.jpg
 uv run python scripts/predict.py pasta_de_fotos/ --conf 0.25
+
+# 4. Demo ao vivo com a webcam (Q/ESC sai, S salva instantâneo)
+uv run python scripts/predict.py --webcam
+
+# 4b. Demo ao vivo já gravando o vídeo anotado em outputs/demo_webcam.mp4
+uv run python scripts/predict.py --webcam --gravar
 ```
 
 Para um teste rápido de ponta a ponta antes do treino completo:
