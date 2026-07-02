@@ -189,7 +189,7 @@ def main() -> None:
     if not weights.exists():
         raise SystemExit(f"Pesos não encontrados em {weights}. Rode antes: uv run python scripts/train.py")
 
-    if args.webcam:
+    if args.webcam or args.gravar:  # --gravar sozinho já implica a demo ao vivo
         OUTPUT_DIR.mkdir(exist_ok=True)
         run_webcam(YOLO(str(weights)), args.conf, args.camera, args.gravar)
         return
