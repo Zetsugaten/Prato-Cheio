@@ -1,4 +1,4 @@
-# 🍽️ food-plate-vision
+# 🍽️ Prato Cheio
 
 **Estimativa da quantidade de comida em um prato a partir de uma foto**, expressa como
 porcentagem da área do prato ocupada por comida. O modelo roda 100% localmente.
@@ -46,8 +46,8 @@ Pré-requisitos: Windows/Linux com GPU NVIDIA (testado numa RTX 2060 Super 8GB) 
 [uv](https://docs.astral.sh/uv/) instalado (`pip install uv`).
 
 ```powershell
-git clone https://github.com/Zetsugaten/food-plate-vision.git
-cd food-plate-vision
+git clone https://github.com/Zetsugaten/Prato-Cheio.git
+cd Prato-Cheio
 uv sync   # cria o ambiente: Python 3.12 + PyTorch CUDA 12.6 + Ultralytics
 ```
 
