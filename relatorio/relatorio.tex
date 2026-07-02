@@ -404,6 +404,102 @@ integra a área total da máscara (Equação~\eqref{eq:quantidade}), pequenos de
 têm impacto reduzido na medida final. A inferência leva cerca de 2~ms por imagem na GPU
 utilizada, viabilizando a operação em tempo real descrita na Seção anterior.
 
+\subsection{Testes com imagens externas}
+
+Para avaliar a generalização além do conjunto de treino, o sistema foi testado com três
+fotografias externas ao FoodSeg103, obtidas na internet, retratando refeições típicas
+(Figuras~\ref{fig:teste1} a~\ref{fig:teste3}). Nos três casos a transformada de Hough
+localizou corretamente a borda do prato e a máscara cobriu os alimentos com precisão,
+produzindo medidas coerentes com a inspeção visual: $65{,}9\%$ para um prato feito bem
+servido, $47{,}7\%$ para um prato com porções espaçadas e $52{,}4\%$ para uma refeição de
+frango empanado com acompanhamentos. A execução foi feita diretamente pela linha de comando
+(Figura~\ref{fig:terminal}); adicionalmente, o processamento em lote do conjunto de validação
+gerou mais de 1.300 visualizações (Figura~\ref{fig:lote}), permitindo inspeção qualitativa
+ampla do comportamento do sistema.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.95\textwidth]{figuras/teste1_resultado.jpg}
+  \caption{Teste externo 1 --- prato feito brasileiro: $Q = 65{,}9\%$.}
+  \label{fig:teste1}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.95\textwidth]{figuras/teste2_resultado.jpg}
+  \caption{Teste externo 2 --- prato com porções espaçadas: $Q = 47{,}7\%$.}
+  \label{fig:teste2}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.95\textwidth]{figuras/teste3_resultado.jpg}
+  \caption{Teste externo 3 --- frango empanado com acompanhamentos: $Q = 52{,}4\%$.}
+  \label{fig:teste3}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.95\textwidth]{figuras/teste_terminal.png}
+  \caption{Execução do sistema pela linha de comando (PowerShell) nos três testes externos.}
+  \label{fig:terminal}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.95\textwidth]{figuras/teste_lote.png}
+  \caption{Processamento em lote: mais de 1.300 visualizações geradas sobre o conjunto de
+  validação.}
+  \label{fig:lote}
+\end{figure}
+
+\subsection{Demonstração ao vivo com câmera}
+
+O modo de demonstração em tempo real (Seção anterior) foi testado apontando a webcam para as
+mesmas três refeições exibidas em um monitor (Figuras~\ref{fig:cam1} a~\ref{fig:cam3}). Esse
+arranjo introduz degradações realistas --- reamostragem espacial, iluminação da tela, ruído do
+sensor e enquadramento manual --- e ainda assim as medidas permaneceram próximas às obtidas
+sobre os arquivos originais, como resume a Tabela~\ref{tab:cam}: a maior diferença foi de
+3,5~pontos percentuais. Essa consistência entre condições de aquisição distintas evidencia a
+robustez conjunta do segmentador e da detecção do prato.
+
+\begin{table}[H]
+  \centering
+  \caption{Comparação da medida $Q$ entre o arquivo original e a captura ao vivo pela webcam.}
+  \label{tab:cam}
+  \begin{tabular}{lccc}
+    \toprule
+    Refeição & Arquivo & Webcam & Diferença (p.p.) \\
+    \midrule
+    Prato feito brasileiro        & 65{,}9\% & 64{,}0\% & 1{,}9 \\
+    Prato com porções espaçadas   & 47{,}7\% & 44{,}2\% & 3{,}5 \\
+    Frango empanado               & 52{,}4\% & 53{,}8\% & 1{,}4 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.95\textwidth]{figuras/teste_camera1.png}
+  \caption{Demonstração ao vivo 1: webcam apontada ao monitor com o prato feito;
+  $Q = 64{,}0\%$ (arquivo original: $65{,}9\%$).}
+  \label{fig:cam1}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.95\textwidth]{figuras/teste_camera2.png}
+  \caption{Demonstração ao vivo 2: $Q = 44{,}2\%$ (arquivo original: $47{,}7\%$).}
+  \label{fig:cam2}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.95\textwidth]{figuras/teste_camera3.png}
+  \caption{Demonstração ao vivo 3: $Q = 53{,}8\%$ (arquivo original: $52{,}4\%$).}
+  \label{fig:cam3}
+\end{figure}
+
 \subsection{Limitações}
 \label{sec:limitacoes}
 
@@ -437,7 +533,10 @@ detecção de bordas por gradiente e transformada de Hough circular), ilustrando
 os conceitos da disciplina --- convolução 2D, filtragem não linear, gradiente e detecção
 paramétrica de formas --- permanecem centrais mesmo em pipelines modernos de visão
 computacional: as próprias camadas da rede neural são bancos de filtros convolucionais cujos
-coeficientes são aprendidos dos dados.
+coeficientes são aprendidos dos dados. Os testes com fotografias externas ao conjunto de
+treino e com captura ao vivo pela webcam confirmaram a generalização do sistema, com medidas
+consistentes entre condições de aquisição distintas (diferença máxima de 3,5~pontos
+percentuais entre arquivo e câmera).
 
 Como trabalhos futuros, destacam-se a estimativa de volume (3D) da porção, o suporte a pratos
 não circulares via segmentação do prato pela própria rede e a validação quantitativa da medida

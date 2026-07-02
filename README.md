@@ -7,7 +7,7 @@ porcentagem da área do prato ocupada por comida. O modelo roda 100% localmente.
 > **Aluno:** Gabriel Videla Figueiredo · **Professor:** Gabriel Matos Araujo
 
 ![Exemplo do pipeline](docs/exemplo_pipeline.jpg)
-*Saída do modelo final em imagem de validação: máscara de comida (verde), borda do prato via transformada de Hough (azul) e porcentagem calculada.*
+*Saída do modelo final em foto externa ao dataset (prato feito brasileiro): máscara de comida (verde), borda do prato via transformada de Hough (azul) e porcentagem calculada.*
 
 ## 📐 Como funciona
 
